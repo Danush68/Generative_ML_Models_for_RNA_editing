@@ -13,6 +13,8 @@ def generate_rna_sequence(length, target_codon="AUG", target_position=8):
 
     return "".join(sequence)
 
+def string_rev(seq):
+    return seq[::-1]
 
 def complement_rna(sequence):
     """
@@ -23,15 +25,9 @@ def complement_rna(sequence):
 
 
 def create_hairpin(original, complimentary):
-    """
-    Creates a structured hairpin loop including barcode, variable region, and hairpin.
-    """
-    barcode = "GGGAAACCC"  # Example barcode sequence
-    invariant_left = "GGG"  # Left invariant region
-    invariant_right = "CCC"  # Right invariant region
-    loop_sequence = "UUUUU"  # Hairpin loop structure
-
-    return original + loop_sequence + complimentary
+    loop_sequence = " UUUUUU "  # Hairpin loop structure
+    compli = string_rev(complimentary)
+    return original + loop_sequence + compli
 
 
 # Example usage
@@ -40,6 +36,7 @@ target_codon = "AUG"
 target_position = 8  # Position where AUG should be preserved
 
 original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
+#original_rna = "TGCAAAGATTGCTGACTACAGCATTGCTCAGTACTGCTGTAGAAT" // from the paper
 complementary_rna = complement_rna(original_rna)
 hairpin_rna = create_hairpin(original_rna, complementary_rna)
 
