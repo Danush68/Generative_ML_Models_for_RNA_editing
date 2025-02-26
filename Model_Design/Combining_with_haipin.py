@@ -1,10 +1,6 @@
 import random
 
 def generate_rna_sequence(length, target_codon="AUG", target_position=8):
-    """
-    Generates a random RNA sequence of given length while ensuring the target codon
-    appears at the specified position.
-    """
     bases = ["A", "U", "G", "C"]
     sequence = [random.choice(bases) for _ in range(length)]
 
@@ -13,19 +9,29 @@ def generate_rna_sequence(length, target_codon="AUG", target_position=8):
 
     return "".join(sequence)
 
+
+def mutate_rna_sequence(seq, n):
+    nucleotides = ['A', 'U', 'C', 'G']
+    seq_list = list(seq)
+    positions = random.sample(range(len(seq)), n)
+
+    for pos in positions:
+        original = seq_list[pos]
+        new_nucleotide = random.choice([nt for nt in nucleotides if nt != original])
+        seq_list[pos] = new_nucleotide
+
+    return ''.join(seq_list)
+
 def string_rev(seq):
     return seq[::-1]
 
 def complement_rna(sequence):
-    """
-    Returns the complementary RNA sequence.
-    """
     complement_map = {"A": "U", "U": "A", "G": "C", "C": "G"}
     return "".join(complement_map[base] for base in sequence)
 
 
 def create_hairpin(original, complimentary):
-    loop_sequence = " UUUUUU "  # Hairpin loop structure
+    loop_sequence = " UUUUUU "
     compli = string_rev(complimentary)
     return original + loop_sequence + compli
 
@@ -38,7 +44,9 @@ target_position = 8  # Position where AUG should be preserved
 original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
 #original_rna = "TGCAAAGATTGCTGACTACAGCATTGCTCAGTACTGCTGTAGAAT" // from the paper
 complementary_rna = complement_rna(original_rna)
-hairpin_rna = create_hairpin(original_rna, complementary_rna)
+
+mutated_rna = mutate_rna_sequence(original_rna,3)
+hairpin_rna = create_hairpin(mutated_rna, complementary_rna)
 
 print("Original RNA:", original_rna)
 print("Complimentary RNA:", complementary_rna)
