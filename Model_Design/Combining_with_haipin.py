@@ -11,7 +11,7 @@ def generate_rna_sequence(length, target_codon="AUG", target_position=8):
 
 
 def mutate_rna_sequence(seq, n):
-    nucleotides = ['A', 'U', 'C', 'G']
+    nucleotides = ['A', 'T', 'C', 'G']
     seq_list = list(seq)
     positions = random.sample(range(len(seq)), n)
 
@@ -26,28 +26,34 @@ def string_rev(seq):
     return seq[::-1]
 
 def complement_rna(sequence):
-    complement_map = {"A": "U", "U": "A", "G": "C", "C": "G"}
+    complement_map = {"A": "T", "T": "A", "G": "C", "C": "G"}
     return "".join(complement_map[base] for base in sequence)
 
 
 def create_hairpin(original, complimentary):
-    loop_sequence = " UUUUUU "
+    loop_sequence = " TTTTT "
     compli = string_rev(complimentary)
     return original + loop_sequence + compli
 
 
 # Example usage
 rna_length = 8 + 3 + 21  # 8 upstream, AUG, 21 downstream
-target_codon = "AUG"
+target_codon = "ATG"
 target_position = 8  # Position where AUG should be preserved
 
-original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
-#original_rna = "TGCAAAGATTGCTGACTACAGCATTGCTCAGTACTGCTGTAGAAT" // from the paper
+#original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
+#This sequence has to be fixed once the model target is obtained
+original_rna = "TCTAGATAAGGCAGTGCTATACTTGACAAC"
 complementary_rna = complement_rna(original_rna)
 
-mutated_rna = mutate_rna_sequence(original_rna,3)
-hairpin_rna = create_hairpin(mutated_rna, complementary_rna)
+mutated_rna_1 = mutate_rna_sequence(original_rna,1)
+mutated_rna_3 = mutate_rna_sequence(original_rna,3)
+hairpin_rna = create_hairpin(original_rna, complementary_rna)
+hairpin_rna_mutated_1 = create_hairpin(mutated_rna_1, complementary_rna)
+hairpin_rna_mutated_3 = create_hairpin(mutated_rna_3, complementary_rna)
 
 print("Original RNA:", original_rna)
 print("Complimentary RNA:", complementary_rna)
 print("Hairpin RNA:", hairpin_rna)
+print("Hairpin RNA with 1 mutated:", hairpin_rna_mutated_1)
+print("Hairpin RNA with 3 mutated:", hairpin_rna_mutated_3)
