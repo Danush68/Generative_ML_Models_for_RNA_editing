@@ -9,7 +9,6 @@ def generate_rna_sequence(length, target_codon="AUG", target_position=8):
 
     return "".join(sequence)
 
-
 def mutate_rna_sequence(seq, n):
     nucleotides = ['A', 'T', 'C', 'G']
     seq_list = list(seq)
@@ -29,7 +28,6 @@ def complement_rna(sequence):
     complement_map = {"A": "T", "T": "A", "G": "C", "C": "G"}
     return "".join(complement_map[base] for base in sequence)
 
-
 def create_hairpin(original, complimentary):
     loop_sequence = " TTTTT "
     compli = string_rev(complimentary)
@@ -43,7 +41,7 @@ target_position = 8  # Position where AUG should be preserved
 
 #original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
 #This sequence has to be fixed once the model target is obtained
-original_rna = "TCTAGATAAGGCAGTGCTATACTTGACAAC"
+original_rna = "CCTTATCAATTCATTCTAGAGAAATCTGGA"
 complementary_rna = complement_rna(original_rna)
 
 mutated_rna_1 = mutate_rna_sequence(original_rna,1)
