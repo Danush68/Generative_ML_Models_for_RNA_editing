@@ -44,11 +44,11 @@ target_position = 8  # Position where AUG should be preserved
 original_rna = "CCTTATCAATTCATTCTAGAGAAATCTGGA"
 complementary_rna = complement_rna(original_rna)
 
-mutated_rna_1 = mutate_rna_sequence(original_rna,1)
-mutated_rna_3 = mutate_rna_sequence(original_rna,3)
+mutated_rna_1 = mutate_rna_sequence(complementary_rna,1)
+mutated_rna_3 = mutate_rna_sequence(complementary_rna,3)
 hairpin_rna = create_hairpin(original_rna, complementary_rna)
-hairpin_rna_mutated_1 = create_hairpin(mutated_rna_1, complementary_rna)
-hairpin_rna_mutated_3 = create_hairpin(mutated_rna_3, complementary_rna)
+hairpin_rna_mutated_1 = create_hairpin(original_rna, mutated_rna_1)
+hairpin_rna_mutated_3 = create_hairpin(original_rna, mutated_rna_3)
 
 print("Original RNA:", original_rna)
 print("Complimentary RNA:", complementary_rna)

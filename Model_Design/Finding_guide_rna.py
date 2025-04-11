@@ -29,6 +29,7 @@ guide_rna_seq = find_guide_rna(rna_sequence, mutation_position)
 
 # Output results
 print("Original RNA Sequence:", rna_sequence)
-print("Original RNA Sequence:", rna_sequence[6047:6077:1])
+print("Initial 70:", rna_sequence[0:70])
 print("mutation position:",mutation_position)
+print("Guide RNA Sequence:", rna_sequence[6047:6077])
 print("Guide RNA Sequence:", guide_rna_seq)
