@@ -12,7 +12,9 @@ def generate_rna_sequence(length, target_codon="AUG", target_position=8):
 def mutate_rna_sequence(seq, n):
     nucleotides = ['A', 'T', 'C', 'G']
     seq_list = list(seq)
-    positions = random.sample(range(len(seq)), n)
+    # Create a list of indices excluding 7
+    valid_positions = [i for i in range(len(seq)) if i != 7]
+    positions = random.sample(valid_positions, n)
 
     for pos in positions:
         original = seq_list[pos]
@@ -41,8 +43,13 @@ target_position = 8  # Position where AUG should be preserved
 
 #original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
 #This sequence has to be fixed once the model target is obtained
-original_rna = "CCTTATCAATTCATTCTAGAGAAATCTGGA"
+original_rna = "TGACTACAGCATTGCTCAGTACTGCTGTAGAA"
 complementary_rna = complement_rna(original_rna)
+
+complementary_rna_1 = list(complementary_rna)
+complementary_rna_1[7] = 'A' # for the mutation
+complementary_rna_1 = ''.join(complementary_rna_1)
+complementary_rna = complementary_rna_1
 
 mutated_rna_1 = mutate_rna_sequence(complementary_rna,1)
 mutated_rna_3 = mutate_rna_sequence(complementary_rna,3)

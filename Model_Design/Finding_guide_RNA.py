@@ -1,34 +1,30 @@
-def load_fasta(filepath):
-    with open(filepath, "r") as f:
-        lines = f.readlines()
-    return ''.join(line.strip() for line in lines if not line.startswith('>'))
+# Step 0: Load the CDS from the FASTA file
+with open("FASTA Nucleotide.txt", "r") as f:
+    lines = f.readlines()
+    # Skip header lines starting with ">"
+    cds_seq = ''.join([line.strip() for line in lines if not line.startswith(">")])
 
-def find_nth_atg(sequence, n):
-    idx = -1
-    count = 0
-    while count < n:
-        idx = sequence.find("ATG", idx + 1)
-        if idx == -1:
-            return None
-        count += 1
-    return idx
+# Step 1: Apply mutation (G → A at position 6055)
+cds_mut = list(cds_seq)
+cds_mut[6055 - 1] = 'A'  # 0-based index
+cds_mut = ''.join(cds_mut)
 
-def complement_to_guide_rna(sequence):
-    mapping = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
-    return ''.join(mapping.get(n, 'N') for n in sequence)
+# Step 2: Calculate the codon position for amino acid #2019
+aa_position = 2019
+codon_start = (aa_position - 1) * 3  # 0-based index
+target_a_index = codon_start + 1  # Middle nucleotide of codon (the editable A)
 
-# Load full sequence
-fasta_file = "LRRK2 G2019S.txt"
-seq = load_fasta(fasta_file)
+# Step 3: Extract window from -8 to +21 around the target A
+upstream = 8
+downstream = 21
+window_start = target_a_index - upstream
+window_end = target_a_index + 3 + downstream
+target_window_dna = cds_mut[window_start:window_end]
 
-# Get 2019th ATG position
-atg_index = find_nth_atg(seq, 2019)
-if atg_index is None or atg_index < 8 or atg_index + 3 + 21 > len(seq):
-    raise ValueError("ATG not found or extraction out of bounds.")
+# Step 4: Convert to RNA (T → U)
+target_window_rna = target_window_dna.replace("T", "U")
 
-# Extract 8 upstream + ATG + 21 downstream (total = 32 bases)
-target_region = seq[atg_index - 8 : atg_index + 3 + 21]
-guide_rna = complement_to_guide_rna(target_region)
-
-print("🧬 Coding Region (8 + ATG + 21):", target_region)
-print("🎯 Guide RNA (complement):", guide_rna)
+# Step 5: Print or return the target RNA sequence
+print("Target RNA sequence (-8 to +21):")
+print(target_window_rna)
+print(target_window_dna)
