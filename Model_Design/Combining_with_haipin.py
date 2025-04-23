@@ -43,7 +43,7 @@ target_position = 8  # Position where AUG should be preserved
 
 #original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
 #This sequence has to be fixed once the model target is obtained
-original_rna = "TGACTACAGCATTGCTCAGTACTGCTGTAGAA"
+original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
 complementary_rna = complement_rna(original_rna)
 
 complementary_rna_1 = list(complementary_rna)

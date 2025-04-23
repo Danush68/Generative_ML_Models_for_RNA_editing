@@ -3,7 +3,7 @@ import RNA
 from tqdm import tqdm
 
 # Load your dataset
-df = pd.read_csv("hairpin_rna_random_mutations.csv")
+df = pd.read_csv("../Model_Design/hairpin_rna_random_mutations.csv")
 
 # Convert Mutated_Complement from DNA to RNA (T -> U)
 df['Mutated_RNA'] = df['Mutated_Complement'].str.replace('T', 'U')

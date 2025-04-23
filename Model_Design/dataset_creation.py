@@ -28,7 +28,7 @@ def create_hairpin(original, complementary):
     return original + loop_sequence + compli
 
 # 🔬 Fixed original RNA sequence (centered around 2019th mutation)
-original_rna = "TGACTACAGCATTGCTCAGTACTGCTGTAGAA"
+original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
 complementary_rna = complement_rna(original_rna)
 
 # 📦 Generate 10,000 mutated samples with random 1–15 mutations
@@ -36,7 +36,7 @@ samples = []
 num_samples = 10000
 
 complementary_rna_1 = list(complementary_rna)
-complementary_rna_1[7] = 'A' # for the mutation
+complementary_rna_1[8] = 'A' # for the mutation
 complementary_rna_1 = ''.join(complementary_rna_1)
 complementary_rna = complementary_rna_1
 

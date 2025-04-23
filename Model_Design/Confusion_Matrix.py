@@ -34,7 +34,7 @@ def one_hot_encode(seq):
     return [mapping.get(nuc, [0, 0, 0, 0]) for nuc in seq]
 
 # Reference fixed RNA sequence (based on 2019th mutation site)
-original_rna = "TGACTACAGCATTGCTCAGTACTGCTGTAGAA"
+original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
 complementary_rna = complement_rna(original_rna)
 
 # Generate samples

@@ -15,8 +15,8 @@ codon_start = (aa_position - 1) * 3  # 0-based index
 target_a_index = codon_start + 1  # Middle nucleotide of codon (the editable A)
 
 # Step 3: Extract window from -8 to +21 around the target A
-upstream = 8
-downstream = 21
+upstream = 9
+downstream = 18
 window_start = target_a_index - upstream
 window_end = target_a_index + 3 + downstream
 target_window_dna = cds_mut[window_start:window_end]
