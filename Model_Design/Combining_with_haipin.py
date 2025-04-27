@@ -13,7 +13,7 @@ def mutate_rna_sequence(seq, n):
     nucleotides = ['A', 'T', 'C', 'G']
     seq_list = list(seq)
     # Create a list of indices excluding 7
-    valid_positions = [i for i in range(len(seq)) if i != 7]
+    valid_positions = [i for i in range(len(seq)) if i != 8]
     positions = random.sample(valid_positions, n)
 
     for pos in positions:
@@ -47,7 +47,7 @@ original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
 complementary_rna = complement_rna(original_rna)
 
 complementary_rna_1 = list(complementary_rna)
-complementary_rna_1[7] = 'A' # for the mutation
+complementary_rna_1[8] = 'A' # for the mutation
 complementary_rna_1 = ''.join(complementary_rna_1)
 complementary_rna = complementary_rna_1
 
