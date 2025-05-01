@@ -35,30 +35,34 @@ def create_hairpin(original, complimentary):
     compli = string_rev(complimentary)
     return original + loop_sequence + compli
 
+def example_usage():
+    # Example usage
+    rna_length = 8 + 3 + 21  # 8 upstream, AUG, 21 downstream
+    target_codon = "ATG"
+    target_position = 8  # Position where AUG should be preserved
 
-# Example usage
-rna_length = 8 + 3 + 21  # 8 upstream, AUG, 21 downstream
-target_codon = "ATG"
-target_position = 8  # Position where AUG should be preserved
+    #original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
+    #This sequence has to be fixed once the model target is obtained
+    original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
+    complementary_rna = complement_rna(original_rna)
 
-#original_rna = generate_rna_sequence(rna_length, target_codon, target_position)
-#This sequence has to be fixed once the model target is obtained
-original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
-complementary_rna = complement_rna(original_rna)
+    complementary_rna_1 = list(complementary_rna)
+    complementary_rna_1[8] = 'A' # for the mutation
+    complementary_rna_1 = ''.join(complementary_rna_1)
+    complementary_rna = complementary_rna_1
 
-complementary_rna_1 = list(complementary_rna)
-complementary_rna_1[8] = 'A' # for the mutation
-complementary_rna_1 = ''.join(complementary_rna_1)
-complementary_rna = complementary_rna_1
+    mutated_rna_1 = mutate_rna_sequence(complementary_rna,1)
+    mutated_rna_3 = mutate_rna_sequence(complementary_rna,3)
+    hairpin_rna = create_hairpin(original_rna, complementary_rna)
+    hairpin_rna_mutated_1 = create_hairpin(original_rna, mutated_rna_1)
+    hairpin_rna_mutated_3 = create_hairpin(original_rna, mutated_rna_3)
 
-mutated_rna_1 = mutate_rna_sequence(complementary_rna,1)
-mutated_rna_3 = mutate_rna_sequence(complementary_rna,3)
-hairpin_rna = create_hairpin(original_rna, complementary_rna)
-hairpin_rna_mutated_1 = create_hairpin(original_rna, mutated_rna_1)
-hairpin_rna_mutated_3 = create_hairpin(original_rna, mutated_rna_3)
+    print("Original RNA:", original_rna)
+    print("Complimentary RNA:", complementary_rna)
+    print("Hairpin RNA:", hairpin_rna)
+    print("Hairpin RNA with 1 mutated:", hairpin_rna_mutated_1)
+    print("Hairpin RNA with 3 mutated:", hairpin_rna_mutated_3)
 
-print("Original RNA:", original_rna)
-print("Complimentary RNA:", complementary_rna)
-print("Hairpin RNA:", hairpin_rna)
-print("Hairpin RNA with 1 mutated:", hairpin_rna_mutated_1)
-print("Hairpin RNA with 3 mutated:", hairpin_rna_mutated_3)
+x = input("Enter 'y' if you want to see an example usage: ")
+if x == 'y':
+    example_usage()

@@ -1,6 +1,9 @@
 import random
 import pandas as pd
+from tqdm import tqdm
+
 import Combining_with_haipin as ch
+import time
 
 # 🔬 Fixed original RNA sequence (centered around 2019th mutation)
 original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
@@ -30,4 +33,8 @@ for _ in range(num_samples):
 # 💾 Save to CSV
 df = pd.DataFrame(samples)
 df.to_csv("../../data/raw/hairpin_rna_random_mutations.csv", index=False)
+
+for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Saving Data"):
+    # Simulate some processing time
+    time.sleep(0.0001)  # Adjust the sleep time as needed
 print("✅ Saved 10,000 hairpin RNAs with 1–15 mutations to 'hairpin_rna_random_mutations.csv'")
