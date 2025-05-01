@@ -29,5 +29,5 @@ for _ in range(num_samples):
 
 # 💾 Save to CSV
 df = pd.DataFrame(samples)
-df.to_csv("hairpin_rna_random_mutations.csv", index=False)
+df.to_csv("../../data/raw/hairpin_rna_random_mutations.csv", index=False)
 print("✅ Saved 10,000 hairpin RNAs with 1–15 mutations to 'hairpin_rna_random_mutations.csv'")

@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 # Load the dataset
-df = pd.read_csv("../Model_Design/hairpin_rna_random_mutations.csv")
+df = pd.read_csv("../data/raw/hairpin_rna_random_mutations.csv")
 
 # Create binary labels: 1 if mutations >= 5
 df["label"] = (df["Mutations"] >= 5).astype(int)
@@ -58,7 +58,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = RNABiLSTM().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-writer = SummaryWriter(log_dir="runs/hairpin_rna_classification")
+writer = SummaryWriter(log_dir="../Model_Training/runs/hairpin_rna_classification")
 
 # Training and validation
 train_losses, val_accuracies = [], []

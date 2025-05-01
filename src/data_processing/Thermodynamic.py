@@ -3,7 +3,7 @@ import RNA
 from tqdm import tqdm
 
 # Load your dataset
-df = pd.read_csv("../Model_Design/hairpin_rna_random_mutations.csv")
+df = pd.read_csv("../../data/raw/hairpin_rna_random_mutations.csv")
 
 # Convert Mutated_Complement from DNA to RNA (T -> U)
 df['Mutated_RNA'] = df['Mutated_Complement'].str.replace('T', 'U')
@@ -53,5 +53,5 @@ df['Centroid Structure'] = centroid_structures
 df['Centroid Energy'] = centroid_energies
 
 # Save the enriched DataFrame to a CSV
-df.to_csv("vienna_rna_full_features.csv", index=False)
+df.to_csv("../../data/processed/vienna_rna_full_features.csv", index=False)
 print("✅ Saved all thermodynamic features to 'vienna_rna_full_features.csv'")
