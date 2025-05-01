@@ -1,5 +1,5 @@
 # Step 0: Load the CDS from the FASTA file
-with open("../models_txt/FASTA Nucleotide.txt", "r") as f:
+with open("../dataset_txt/FASTA Nucleotide.txt", "r") as f:
     lines = f.readlines()
     # Skip header lines starting with ">"
     cds_seq = ''.join([line.strip() for line in lines if not line.startswith(">")])
