@@ -1,4 +1,3 @@
-
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -8,8 +7,9 @@ from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from src.models.regression_cnn_model import CNNRegressor
 
-df = pd.read_csv("data/raw/hairpin_rna_random_mutations.csv")
+df = pd.read_csv("../data/raw/hairpin_rna_random_mutations.csv")
 df["Hairpin_RNA"] = df["Hairpin_RNA"].astype(str).str.replace(" ", "")
 vocab = {'A': 0, 'U': 1, 'G': 2, 'C': 3}
 df["encoded_seq"] = df["Hairpin_RNA"].apply(lambda x: [vocab.get(c, 0) for c in x])
@@ -31,20 +31,6 @@ class RNADataset(Dataset):
 train_loader = DataLoader(RNADataset(X_train, y_train), batch_size=32, shuffle=True)
 test_loader = DataLoader(RNADataset(X_test, y_test), batch_size=32)
 
-class CNNRegressor(nn.Module):
-    def __init__(self, vocab_size=4, embed_dim=16):
-        super().__init__()
-        self.embed = nn.Embedding(vocab_size, embed_dim)
-        self.conv = nn.Conv1d(embed_dim, 64, kernel_size=5, padding=2)
-        self.pool = nn.AdaptiveMaxPool1d(1)
-        self.fc = nn.Linear(64, 1)
-
-    def forward(self, x):
-        x = self.embed(x).permute(0, 2, 1)
-        x = torch.relu(self.conv(x))
-        x = self.pool(x).squeeze(2)
-        return self.fc(x).squeeze(1)
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = CNNRegressor().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -52,7 +38,7 @@ criterion = nn.MSELoss()
 
 train_losses, val_r2s = [], []
 
-for epoch in range(5):
+for epoch in range(20):
     model.train()
     total_loss = 0
     for X_batch, y_batch in train_loader:
@@ -77,8 +63,8 @@ for epoch in range(5):
     val_r2s.append(r2)
     print(f"Epoch {epoch+1}: Loss = {train_losses[-1]:.4f}, R² = {r2:.4f}")
 
-os.makedirs("outputs/models", exist_ok=True)
-torch.save(model.state_dict(), "outputs/models/cnn_regressor.pth")
+os.makedirs("../outputs/models", exist_ok=True)
+torch.save(model.state_dict(), "../outputs/models/cnn_regressor.pth")
 
 plt.figure(figsize=(12, 5))
 
@@ -99,6 +85,7 @@ plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
+plt.savefig("../outputs/plots/R²_loss_vs_validation.png")
 plt.show()
 
 rmse = np.sqrt(mean_squared_error(all_true, all_preds))

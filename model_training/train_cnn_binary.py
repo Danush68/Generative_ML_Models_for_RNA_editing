@@ -1,4 +1,3 @@
-
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -7,8 +6,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 import os
+from src.models.binary_cnn_model import CNNClassifier
 
-df = pd.read_csv("data/raw/hairpin_rna_random_mutations.csv")
+df = pd.read_csv("../data/raw/hairpin_rna_random_mutations.csv")
 df["Hairpin_RNA"] = df["Hairpin_RNA"].astype(str).str.replace(" ", "")
 df["label"] = (df["Mutations"] >= 5).astype(int)
 
@@ -34,20 +34,6 @@ class RNASequenceDataset(Dataset):
 train_loader = DataLoader(RNASequenceDataset(X_train, y_train), batch_size=32, shuffle=True)
 test_loader = DataLoader(RNASequenceDataset(X_test, y_test), batch_size=32)
 
-class CNNClassifier(nn.Module):
-    def __init__(self, vocab_size=4, embed_dim=16):
-        super().__init__()
-        self.embed = nn.Embedding(vocab_size, embed_dim)
-        self.conv = nn.Conv1d(embed_dim, 64, kernel_size=5, padding=2)
-        self.pool = nn.AdaptiveMaxPool1d(1)
-        self.fc = nn.Linear(64, 2)
-
-    def forward(self, x):
-        x = self.embed(x).permute(0, 2, 1)
-        x = torch.relu(self.conv(x))
-        x = self.pool(x).squeeze(2)
-        return self.fc(x)
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = CNNClassifier().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -55,7 +41,7 @@ criterion = nn.CrossEntropyLoss()
 
 train_losses, val_accuracies = [], []
 
-for epoch in range(5):
+for epoch in range(20):
     model.train()
     total_loss = 0
     for X_batch, y_batch in train_loader:
@@ -80,8 +66,8 @@ for epoch in range(5):
     val_accuracies.append(acc)
     print(f"Epoch {epoch+1}: Loss = {train_losses[-1]:.4f}, Accuracy = {acc:.4f}")
 
-os.makedirs("outputs/models", exist_ok=True)
-torch.save(model.state_dict(), "outputs/models/cnn_binary.pth")
+os.makedirs("../outputs/models", exist_ok=True)
+torch.save(model.state_dict(), "../outputs/models/cnn_binary.pth")
 
 plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
@@ -100,6 +86,7 @@ plt.ylabel("Accuracy")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
+plt.savefig("../outputs/plots/binary_loss_vs_accuracy.png")
 plt.show()
 
 print("\nðŸ“Š Classification Report:")
@@ -110,4 +97,5 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["<5 Mut", "â‰
 disp.plot(cmap="Blues")
 plt.title("Confusion Matrix")
 plt.grid(False)
+plt.savefig("../outputs/confusion_matrix/binary_confusion_matrix.png")
 plt.show()

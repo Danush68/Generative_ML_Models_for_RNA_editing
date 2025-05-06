@@ -4,12 +4,12 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-import numpy as np
+from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
 import matplotlib.pyplot as plt
 import os
+from src.models.mutation_predictor_cnn_model import CNNClassifier
 
-df = pd.read_csv("data/raw/hairpin_rna_random_mutations.csv").head(1000).copy()
+df = pd.read_csv("../data/raw/hairpin_rna_random_mutations.csv").head(1000).copy()
 df["Hairpin_RNA"] = df["Hairpin_RNA"].astype(str).str.replace(" ", "", regex=False)
 df["Secondary_Structure"] = ["." * len(seq) for seq in df["Hairpin_RNA"]]
 df["label"] = (df["Mutations"] >= 5).astype(int)
@@ -41,22 +41,6 @@ class HairpinDataset(Dataset):
 train_loader = DataLoader(HairpinDataset(X_seq_train, X_struct_train, y_train), batch_size=32, shuffle=True)
 test_loader = DataLoader(HairpinDataset(X_seq_test, X_struct_test, y_test), batch_size=32)
 
-class CNNClassifier(nn.Module):
-    def __init__(self, vocab_size=8, embed_dim=16, num_classes=2):
-        super().__init__()
-        self.embed_seq = nn.Embedding(vocab_size, embed_dim)
-        self.embed_struct = nn.Embedding(vocab_size, embed_dim)
-        self.conv = nn.Conv1d(2 * embed_dim, 64, kernel_size=5, padding=2)
-        self.pool = nn.AdaptiveMaxPool1d(1)
-        self.fc = nn.Linear(64, num_classes)
-
-    def forward(self, seq, struct):
-        seq_emb = self.embed_seq(seq).permute(0, 2, 1)
-        struct_emb = self.embed_struct(struct).permute(0, 2, 1)
-        x = torch.cat([seq_emb, struct_emb], dim=1)
-        x = self.pool(torch.relu(self.conv(x))).squeeze(2)
-        return self.fc(x)
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = CNNClassifier().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -64,7 +48,7 @@ criterion = nn.CrossEntropyLoss()
 
 train_losses, val_accuracies = [], []
 
-for epoch in range(5):
+for epoch in range(20):
     model.train()
     total_loss = 0
     for seqs, structs, labels in train_loader:
@@ -89,8 +73,8 @@ for epoch in range(5):
     val_accuracies.append(acc)
     print(f"Epoch {epoch+1}: Loss = {train_losses[-1]:.4f}, Accuracy = {acc:.4f}")
 
-os.makedirs("outputs/models", exist_ok=True)
-torch.save(model.state_dict(), "outputs/models/cnn_mutation.pth")
+os.makedirs("../outputs/models", exist_ok=True)
+torch.save(model.state_dict(), "../outputs/models/cnn_mutation.pth")
 
 plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
@@ -109,4 +93,25 @@ plt.ylabel("Accuracy")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
+plt.savefig("../outputs/plots/mutation_loss_vs_accuracy.png")
+plt.show()
+
+
+# Classification report
+report = classification_report(all_labels, all_preds, target_names=["<5 Mut", "≥5 Mut"])
+print("\\n📊 Classification Report:")
+print(report)
+
+# Save report
+# os.makedirs("results", exist_ok=True)
+# with open("results/cnn_mutation_report.txt", "w") as f:
+#     f.write(report)
+
+# Confusion matrix
+cm = confusion_matrix(all_labels, all_preds)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["<5 Mut", "≥5 Mut"])
+disp.plot(cmap="Blues")
+plt.title("Confusion Matrix")
+plt.grid(False)
+plt.savefig("../outputs/confusion_matrix/mutation_confusion_matrix.png")
 plt.show()

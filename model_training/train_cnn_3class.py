@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 import os
-from src.models.CNN_Model_3_Class import CNNClassifier
+from src.models.three_class_cnn_model import CNNClassifier
 
 # -----------------------------
 # Load and preprocess dataset
