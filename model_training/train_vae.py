@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
+import matplotlib.pyplot as plt
+import os
 from src.models.vae_model import VAE
 
 def loss_fn(recon_x, x, mu, logvar):
@@ -24,6 +26,8 @@ optimizer = optim.Adam(vae.parameters(), lr=1e-3)
 # Training loop
 vae.train()
 epochs = 20
+train_losses = []
+
 for epoch in range(epochs):
     total_loss = 0
     for batch in loader:
@@ -34,8 +38,23 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-    print(f"Epoch {epoch+1}, Loss: {total_loss / len(loader):.4f}")
+    avg_loss = total_loss / len(loader)
+    train_losses.append(avg_loss)
+    print(f"Epoch {epoch+1}, Loss: {avg_loss:.4f}")
 
 # Save model
-torch.save(vae.state_dict(), '../outputs/vae_model.pth')
+os.makedirs("../outputs/models", exist_ok=True)
+torch.save(vae.state_dict(), '../outputs/models/vae_model.pth')
 
+# Plot training loss
+#os.makedirs("../outputs/models", exist_ok=True)
+plt.figure()
+plt.plot(range(1, epochs + 1), train_losses, marker='o')
+plt.title("VAE Training Loss Over Epochs")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.grid(True)
+plt.savefig("../outputs/plots/vae_loss_curve.png")
+plt.show()
+
+print(f"✅ Final Loss: {train_losses[-1]:.4f}")

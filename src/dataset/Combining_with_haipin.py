@@ -58,7 +58,7 @@ def example_usage():
     hairpin_rna_mutated_3 = create_hairpin(original_rna, mutated_rna_3)
 
     print("Original RNA:", original_rna)
-    print("Complimentary RNA:", complementary_rna)
+    print("Guide RNA:", complementary_rna)
     print("Hairpin RNA:", hairpin_rna)
     print("Hairpin RNA with 1 mutated:", hairpin_rna_mutated_1)
     print("Hairpin RNA with 3 mutated:", hairpin_rna_mutated_3)
