@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, ConfusionMatrixDisplay, classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 
 # -----------------------------
@@ -118,3 +118,14 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
+# 1. Print classification report
+print("\n📊 Classification Report:")
+print(classification_report(all_labels, all_preds, target_names=["<5 Mut", "≥5 Mut"]))
+
+# 2. Plot confusion matrix
+cm = confusion_matrix(all_labels, all_preds)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["<5 Mut", "≥5 Mut"])
+disp.plot(cmap="Blues")
+plt.title("Confusion Matrix")
+plt.grid(False)
+plt.show()
