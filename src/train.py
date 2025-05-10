@@ -10,12 +10,12 @@ from torch.utils.tensorboard import SummaryWriter
 # ==== Settings ====
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 batch_size = 64
-epochs = 20
+epochs = 30
 lr = 1e-4
 
 # ==== Load Data ====
 data_dir = "../data/processed"
-x = torch.load(os.path.join(data_dir, "mutated_gRNA_onehot.pt"))  # [N, 50, 4]
+x = torch.load(os.path.join(data_dir, "mutated_gRNA_onehot.pt"))  # [N, 30, 4]
 cond = torch.load(os.path.join(data_dir, "delta_g_mfe.pt"))        # [N, 1]
 
 dataset = TensorDataset(x, cond)

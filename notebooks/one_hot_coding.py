@@ -1,4 +1,4 @@
-import numpy as np
+#import numpy as np
 import pandas as pd
 import torch
 from torch.nn.functional import one_hot
@@ -8,8 +8,8 @@ from tqdm import tqdm
 df = pd.read_csv("../data/processed/vienna_rna_full_features.csv")
 
 # Set target column and parameters
-sequences = df["Mutated_Complement"].str.replace("T", "U")  # ensure RNA format
-max_len = 50  # fixed sequence length
+sequences = df["Mutated_gRNA"].str.replace("T", "U")  # ensure RNA format
+max_len_ = 30  # fixed sequence length
 vocab = ['A', 'C', 'G', 'U']
 base_to_int = {b: i for i, b in enumerate(vocab)}
 
@@ -19,7 +19,7 @@ def encode_sequence(seq, max_len):
     return one_hot(torch.tensor(int_seq), num_classes=4).float()
 
 # Apply encoding to all sequences
-encoded_tensors = torch.stack([encode_sequence(seq, max_len) for seq in tqdm(sequences)])
+encoded_tensors = torch.stack([encode_sequence(seq, max_len_) for seq in tqdm(sequences)])
 
 # Save for training
 torch.save(encoded_tensors, "../data/processed/mutated_gRNA_onehot.pt")

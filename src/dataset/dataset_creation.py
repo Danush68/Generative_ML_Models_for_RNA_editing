@@ -24,8 +24,8 @@ for _ in range(num_samples):
     mutated_hairpin = ch.create_hairpin(original_rna, mutated_compl)
     samples.append({
         "Original_RNA": original_rna,
-        "Original_Compliment(GuideRNA)": complementary_rna,
-        "Mutated_Complement": mutated_compl,
+        "Guide RNA": complementary_rna,
+        "Mutated_gRNA": mutated_compl,
         "Mutations": num_mutations,
         "Hairpin_RNA": mutated_hairpin,
     })
