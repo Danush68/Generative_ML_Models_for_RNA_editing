@@ -2,12 +2,12 @@ import random
 import pandas as pd
 from tqdm import tqdm
 
-import Combining_with_haipin as ch
+import Combining_with_haipin as Ch
 import time
 
 # 🔬 Fixed original RNA sequence (centered around 2019th mutation)
 original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
-complementary_rna = ch.complement_rna(original_rna)
+complementary_rna = Ch.complement_rna(original_rna)
 
 # 📦 Generate 10,000 mutated samples with random 1–15 mutations
 samples = []
@@ -20,8 +20,8 @@ complementary_rna = complementary_rna_1
 
 for _ in range(num_samples):
     num_mutations = random.randint(1, 15)
-    mutated_compl = ch.mutate_rna_sequence(complementary_rna, num_mutations)
-    mutated_hairpin = ch.create_hairpin(original_rna, mutated_compl)
+    mutated_compl = Ch.mutate_rna_sequence(complementary_rna, num_mutations)
+    mutated_hairpin = Ch.create_hairpin(original_rna, mutated_compl)
     samples.append({
         "Original_RNA": original_rna,
         "Guide RNA": complementary_rna,

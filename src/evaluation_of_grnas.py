@@ -2,8 +2,8 @@ import RNA
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def string_rev_temp(seq):
-    return seq[::-1]
+def string_rev_temp(seq_):
+    return seq_[::-1]
 
 def create_hairpin_temp(original, complimentary):
     loop_sequence = " UUUUU "
@@ -11,7 +11,7 @@ def create_hairpin_temp(original, complimentary):
     return original + loop_sequence + compli
 
 
-# Load generated sequences from file
+# Load generated sequences from files
 sequences = []
 original_rna = "CUGACUACAGCAUUGCUCAGUACUGCUGUA"
 with open("generated_sequences.txt", "r") as f:

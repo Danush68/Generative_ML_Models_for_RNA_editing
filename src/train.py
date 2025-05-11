@@ -1,6 +1,6 @@
 # train.py
 import torch
-import torch.nn as nn
+#import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from src.models.bit_diffusion import Unet1D, BitDiffusion
 import os
@@ -55,7 +55,7 @@ for epoch in range(1, epochs + 1):
     # Save checkpoint
     torch.save(diff_model.state_dict(), f"../src/checkpoint/checkpoint_epoch_{epoch}.pt")
 
-    # Save best model
+    # Save the best model
     if avg_loss < best_loss:
         best_loss = avg_loss
         torch.save(diff_model.state_dict(), "../src/checkpoint/best_model.pt")
