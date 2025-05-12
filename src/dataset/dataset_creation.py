@@ -19,7 +19,7 @@ complementary_rna_1 = ''.join(complementary_rna_1)
 complementary_rna = complementary_rna_1
 
 for _ in range(num_samples):
-    num_mutations = random.randint(1, 15)
+    num_mutations = random.randint(1, 10)
     mutated_compl = Ch.mutate_rna_sequence(complementary_rna, num_mutations)
     mutated_hairpin = Ch.create_hairpin(original_rna, mutated_compl)
     samples.append({
