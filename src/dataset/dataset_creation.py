@@ -9,9 +9,9 @@ import time
 original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
 complementary_rna = Ch.complement_rna(original_rna)
 
-# 📦 Generate 10,000 mutated samples with random 1–15 mutations
+# 📦 Generate 100,000 mutated samples with random 1–15 mutations
 samples = []
-num_samples = 10000
+num_samples = 100000
 
 complementary_rna_1 = list(complementary_rna)
 complementary_rna_1[8] = 'A' # for the mutation
@@ -37,4 +37,4 @@ df.to_csv("../../data/raw/hairpin_rna_random_mutations.csv", index=False)
 for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Saving Data"):
     # Simulate some processing time
     time.sleep(0.0001)  # Adjust the sleep time as needed
-print("✅ Saved 10,000 hairpin RNAs with 1–15 mutations to 'hairpin_rna_random_mutations.csv'")
+print("✅ Saved 100,000 hairpin RNAs with 1–15 mutations to 'hairpin_rna_random_mutations.csv'")

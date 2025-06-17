@@ -1,71 +1,95 @@
-# train.py
+# train_target_aware.py
+
 import torch
-#import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
-from src.models.bit_diffusion import Unet1D, BitDiffusion
+import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 import os
-import csv
-from torch.utils.tensorboard import SummaryWriter
 
-# ==== Settings ====
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-batch_size = 64
-epochs = 100
-lr = 1e-4
+from src.models.bit_diffusion import BitDiffusion, Unet1D
 
-# ==== Load Data ====
-data_dir = "../data/processed"
-gRNA = torch.load(os.path.join(data_dir, "mutated_gRNA_onehot.pt"))
-target = torch.load(os.path.join(data_dir, "target_onehot.pt"))  # [N, 30, 4]
-cond = torch.load(os.path.join(data_dir, "delta_g_mfe.pt"))        # [N, 1]
+# === Config ===
+BATCH_SIZE = 128
+EPOCHS = 20
+LR = 1e-4
+TIMESTEPS = 1000
+SEQ_LEN = 30
+CHANNELS = 2
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DATA_DIR = "../data/processed"
+SAVE_PATH = "../src/models/bit_diffusion_unet.pt"
 
-dataset = TensorDataset(gRNA, target, cond)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+# === Dataset Wrapper ===
+class GRNATensorDataset(Dataset):
+    def __init__(self, data_dict):
+        self.x = data_dict["x"]
+        self.cond_seq = data_dict["cond_seq"]
+        self.cond_dg = data_dict["cond_dg"]
 
-# ==== Initialize Model ====
-unet = Unet1D(dim=64, seq_len=30, channels=4, cond_dim=1)
-diff_model = BitDiffusion(unet, timesteps=1000).to(device)
-optimizer = torch.optim.Adam(diff_model.parameters(), lr=lr)
+    def __len__(self):
+        return len(self.x)
 
-# ==== Setup Logging ====
-loss_log = []
-writer = SummaryWriter(log_dir="runs/bit_diff")
-best_loss = float('inf')
+    def __getitem__(self, idx):
+        return {
+            "x": self.x[idx],
+            "cond_seq": self.cond_seq[idx],
+            "cond_dg": self.cond_dg[idx]
+        }
 
-# ==== Training Loop ====
-for epoch in range(1, epochs + 1):
-    diff_model.train()
-    total_loss = 0
-    for batch_x, batch_target, batch_cond in dataloader:
-        batch_x, batch_cond = batch_x.to(device), batch_cond.to(device)
-        t = torch.randint(0, diff_model.timesteps, (batch_x.size(0),), device=device).long()
+# === Load .pt datasets ===
+def load_dataset(name):
+    path = os.path.join(DATA_DIR, f"{name}.pt")
+    data_dict = torch.load(path)
+    dataset = GRNATensorDataset(data_dict)
+    return DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=(name == "train"))
 
-        loss = diff_model.p_losses(batch_x, t, batch_cond, batch_target)
+train_loader = load_dataset("train")
+val_loader = load_dataset("val")
+
+# === Model ===
+unet = Unet1D(dim=128, seq_len=SEQ_LEN, channels=CHANNELS, cond_dim=1, target_dim=4)
+model = BitDiffusion(unet, timesteps=TIMESTEPS).to(DEVICE)
+optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+
+# === Training Loop ===
+for epoch in range(EPOCHS):
+    model.train()
+    total_train_loss = 0.0
+
+    for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
+        x = batch["x"].view(-1, SEQ_LEN, CHANNELS).to(DEVICE)
+        cond_seq = batch["cond_seq"].to(DEVICE)
+        cond_dg = batch["cond_dg"].to(DEVICE)
+
+        t = torch.randint(0, TIMESTEPS, (x.size(0),), device=DEVICE).long()
+        loss = model.p_losses(x, t, cond_dg, cond_seq)
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        total_loss += loss.item() * batch_x.size(0)
+        total_train_loss += loss.item()
 
-    avg_loss = total_loss / len(dataset)
-    loss_log.append((epoch, avg_loss))
-    writer.add_scalar("Loss/train", avg_loss, epoch)
+    avg_train_loss = total_train_loss / len(train_loader)
+    print(f"✅ Epoch {epoch+1}: Avg Train Loss = {avg_train_loss:.6f}")
 
-    print(f"Epoch {epoch}/{epochs} - Loss: {avg_loss:.6f}")
+    # === Validation ===
+    model.eval()
+    with torch.no_grad():
+        total_val_loss = 0.0
+        for batch in val_loader:
+            x = batch["x"].view(-1, SEQ_LEN, CHANNELS).to(DEVICE)
+            cond_seq = batch["cond_seq"].to(DEVICE)
+            cond_dg = batch["cond_dg"].to(DEVICE)
 
-    # Save checkpoint
-    torch.save(diff_model.state_dict(), f"../src/checkpoint/checkpoint_epoch_{epoch}.pt")
+            t = torch.randint(0, TIMESTEPS, (x.size(0),), device=DEVICE).long()
+            loss = model.p_losses(x, t, cond_dg, cond_seq)
+            total_val_loss += loss.item()
 
-    # Save the best model
-    if avg_loss < best_loss:
-        best_loss = avg_loss
-        torch.save(diff_model.state_dict(), "../src/checkpoint/best_model.pt")
+        avg_val_loss = total_val_loss / len(val_loader)
+        print(f"🧪 Validation Loss = {avg_val_loss:.6f}")
 
-# ==== Save Loss Log ====
-with open("training_loss_log.csv", "w", newline="") as f:
-    writer_csv = csv.writer(f)
-    writer_csv.writerow(["Epoch", "Loss"])
-    writer_csv.writerows(loss_log)
-
-writer.close()
-print("✅ Training complete.")
+# === Save model ===
+os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
+torch.save(model.state_dict(), SAVE_PATH)
+print(f"📦 Model saved to {SAVE_PATH}")
