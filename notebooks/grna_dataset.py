@@ -31,8 +31,9 @@ class GRNADataset(Dataset):
             dg_min = self.df['Delta_G_MFE'].min()
         if dg_max is None:
             dg_max = self.df['Delta_G_MFE'].max()
-        self.dg_min = dg_min
-        self.dg_max = dg_max
+        # Updated: Use 1st–99th percentile for ΔG normalization
+        import numpy as np
+        self.dg_min, self.dg_max = np.percentile(self.df['Delta_G_MFE'], [1, 99])
 
     def __len__(self):
         return len(self.df)
@@ -50,6 +51,7 @@ class GRNADataset(Dataset):
 
         # Normalized ΔG value
         dg = (row['Delta_G_MFE'] - self.dg_min) / (self.dg_max - self.dg_min)
+        dg = min(max(dg, 0.0), 1.0)  # Clip to [0, 1]
         cond_dg = torch.tensor([dg], dtype=torch.float32)
 
         return {

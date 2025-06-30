@@ -24,7 +24,7 @@ dg_max = dg_df["Delta_G_MFE"].max()
 
 dg_steps = torch.linspace(0.1, 0.9, steps=9)
 
-unet = Unet1D(dim=128, seq_len=seq_len, channels=channels, cond_dim=1, target_dim=4)
+unet = Unet1D(dim=256, seq_len=seq_len, channels=channels, cond_dim=1, target_dim=4)
 model = BitDiffusion(unet, timesteps=timesteps).to(device)
 model.load_state_dict(torch.load(model_path, map_location=device))
 model.eval()
@@ -32,6 +32,16 @@ model.eval()
 target_seq = torch.load(target_path)[0:1].to(device)
 
 bit_to_base = {(0, 0): 'A', (0, 1): 'C', (1, 0): 'G', (1, 1): 'U'}
+
+
+def decode_onehot_rna(onehot_tensor):
+    """Convert one-hot encoded RNA to string"""
+    idx_to_base = ['A', 'C', 'G', 'U']
+    indices = onehot_tensor.argmax(dim=-1).cpu().tolist()
+    return ''.join([idx_to_base[i] for i in indices])
+
+def mutation_count(gRNA, target):
+    return sum(1 for a, b in zip(gRNA, target) if a != b)
 
 def decode_bits(seq_tensor):
     bits = (seq_tensor > 0.5).int().cpu()
@@ -53,12 +63,15 @@ with torch.no_grad():
 
         print(f"ΔG norm: {dg.item():.2f} → real: {real_dg:.2f} | MFE: {mfe:.2f} | error: {error:.2f}")
 
+        target_str = 'GACUGAUGACGUAACGAGUCAUGACGACAU'
+        mutations = mutation_count(g, target_str)
         rows.append({
             "Conditioned_ΔG_Norm": round(dg.item(), 3),
             "Real_ΔG_Target": round(real_dg, 2),
             "Generated_gRNA": g,
             "Computed_MFE": round(mfe, 2),
-            "Abs_Error_DG_vs_MFE": round(error, 2)
+            "Abs_Error_DG_vs_MFE": round(error, 2),
+            "Mutation_Count": mutations
         })
 
 df = pd.DataFrame(rows)

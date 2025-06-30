@@ -1,7 +1,6 @@
 # train_target_aware.py
 
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import os
@@ -9,8 +8,8 @@ import os
 from src.models.bit_diffusion import BitDiffusion, Unet1D
 
 # === Config ===
-BATCH_SIZE = 128
-EPOCHS = 20
+BATCH_SIZE = 32
+EPOCHS = 100
 LR = 1e-4
 TIMESTEPS = 1000
 SEQ_LEN = 30
@@ -46,12 +45,17 @@ def load_dataset(name):
 train_loader = load_dataset("train")
 val_loader = load_dataset("val")
 
-# === Model ===
-unet = Unet1D(dim=128, seq_len=SEQ_LEN, channels=CHANNELS, cond_dim=1, target_dim=4)
+# === Model and optimizer
+unet = Unet1D(dim=256, seq_len=SEQ_LEN, channels=CHANNELS, cond_dim=1, target_dim=4)
 model = BitDiffusion(unet, timesteps=TIMESTEPS).to(DEVICE)
-optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
-# === Training Loop ===
+optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
+
+train_losses = []
+val_losses = []
+
+# === Training Loop
 for epoch in range(EPOCHS):
     model.train()
     total_train_loss = 0.0
@@ -67,16 +71,15 @@ for epoch in range(EPOCHS):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
         total_train_loss += loss.item()
 
     avg_train_loss = total_train_loss / len(train_loader)
     print(f"✅ Epoch {epoch+1}: Avg Train Loss = {avg_train_loss:.6f}")
 
-    # === Validation ===
+    # === Validation
     model.eval()
+    total_val_loss = 0.0
     with torch.no_grad():
-        total_val_loss = 0.0
         for batch in val_loader:
             x = batch["x"].view(-1, SEQ_LEN, CHANNELS).to(DEVICE)
             cond_seq = batch["cond_seq"].to(DEVICE)
@@ -86,10 +89,33 @@ for epoch in range(EPOCHS):
             loss = model.p_losses(x, t, cond_dg, cond_seq)
             total_val_loss += loss.item()
 
-        avg_val_loss = total_val_loss / len(val_loader)
-        print(f"🧪 Validation Loss = {avg_val_loss:.6f}")
+    avg_val_loss = total_val_loss / len(val_loader)
+    print(f"🧪 Val Loss = {avg_val_loss:.6f}")
+    train_losses.append(avg_train_loss)
+    val_losses.append(avg_val_loss)
+    if (epoch + 1) % 10 == 0:
+        checkpoint_path = f"../src/models/model_epoch_{epoch+1}.pt"
+        torch.save(model.state_dict(), checkpoint_path)
+        print(f"💾 Checkpoint saved to {checkpoint_path}")
 
-# === Save model ===
+    scheduler.step()
+
+# === Save model
 os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
 torch.save(model.state_dict(), SAVE_PATH)
 print(f"📦 Model saved to {SAVE_PATH}")
+
+# === Plot and save loss curves
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8, 5))
+plt.plot(train_losses, label="Train Loss", marker='o')
+plt.plot(val_losses, label="Val Loss", marker='x')
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training and Validation Loss")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("../outputs/plots/loss_curve.png")
+plt.show()

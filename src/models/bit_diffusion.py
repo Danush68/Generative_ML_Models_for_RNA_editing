@@ -12,18 +12,17 @@ def get_timestep_embedding(timesteps, embedding_dim):
     return emb
 
 class Unet1D(nn.Module):
-    def __init__(self, dim=128, seq_len=30, channels=4, cond_dim=1, target_dim=4, time_emb_dim=128):
+    def __init__(self, dim=256, seq_len=30, channels=4, cond_dim=1, target_dim=4, time_emb_dim=128):
         super().__init__()
         self.seq_len = seq_len
 
         self.input_proj = nn.Conv1d(channels + target_dim, dim, kernel_size=3, padding=1)
-
         self.down1 = nn.Conv1d(dim, dim * 2, kernel_size=3, stride=2, padding=1)
         self.down2 = nn.Conv1d(dim * 2, dim * 4, kernel_size=3, stride=2, padding=1)
 
-        self.cond_proj1 = nn.Linear(cond_dim, dim)
-        self.cond_proj2 = nn.Linear(cond_dim, dim * 2)
-        self.cond_proj3 = nn.Linear(cond_dim, dim * 4)
+        self.film1 = nn.Linear(cond_dim, dim * 2)
+        self.film2 = nn.Linear(cond_dim, dim * 4)
+        self.film3 = nn.Linear(cond_dim, dim * 8)
 
         self.time_proj1 = nn.Linear(time_emb_dim, dim)
         self.time_proj2 = nn.Linear(time_emb_dim, dim * 2)
@@ -37,17 +36,18 @@ class Unet1D(nn.Module):
         x = torch.cat([gRNA, target_rna], dim=-1).permute(0, 2, 1)  # [B, C, L]
         t_emb = get_timestep_embedding(timestep, self.time_proj1.in_features)
 
-        dg1 = self.cond_proj1(cond).unsqueeze(-1)
-        dg2 = self.cond_proj2(cond).unsqueeze(-1)
-        dg3 = self.cond_proj3(cond).unsqueeze(-1)
+        # FiLM conditioning: scale & shift for each layer
+        scale1, shift1 = self.film1(cond).chunk(2, dim=-1)
+        scale2, shift2 = self.film2(cond).chunk(2, dim=-1)
+        scale3, shift3 = self.film3(cond).chunk(2, dim=-1)
 
         t1 = self.time_proj1(t_emb).unsqueeze(-1)
         t2 = self.time_proj2(t_emb).unsqueeze(-1)
         t3 = self.time_proj3(t_emb).unsqueeze(-1)
 
-        x1 = F.relu(self.input_proj(x) + dg1 + t1)
-        x2 = F.relu(self.down1(x1) + dg2 + t2)
-        x3 = F.relu(self.down2(x2) + dg3 + t3)
+        x1 = F.relu(self.input_proj(x) * (1 + scale1.unsqueeze(-1)) + shift1.unsqueeze(-1) + t1)
+        x2 = F.relu(self.down1(x1) * (1 + scale2.unsqueeze(-1)) + shift2.unsqueeze(-1) + t2)
+        x3 = F.relu(self.down2(x2) * (1 + scale3.unsqueeze(-1)) + shift3.unsqueeze(-1) + t3)
 
         u1 = F.relu(self.up1(x3))
         u1 = u1[:, :, :x2.shape[2]] + x2
