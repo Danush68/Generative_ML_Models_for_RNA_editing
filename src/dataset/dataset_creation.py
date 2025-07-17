@@ -9,9 +9,9 @@ import time
 original_rna = "CTGACTACAGCATTGCTCAGTACTGCTGTA"
 complementary_rna = Ch.complement_rna(original_rna)
 
-# 📦 Generate 100,000 mutated samples with random 1–15 mutations
+# 📦 Generate 500,000 mutated samples with random 1–15 mutations
 samples = []
-num_samples = 100000
+num_samples = 500000
 
 complementary_rna_1 = list(complementary_rna)
 complementary_rna_1[8] = 'A' # for the mutation

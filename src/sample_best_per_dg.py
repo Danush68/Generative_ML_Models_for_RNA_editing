@@ -9,7 +9,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 seq_len = 30
 channels = 2
 timesteps = 1000
-num_samples_per_bin = 10
+num_samples_per_bin = 300
 
 model_path = "../src/models/bit_diffusion_unet.pt"
 target_path = "../data/processed/target_onehot.pt"
