@@ -1,4 +1,4 @@
-# train_target_aware.py
+# === train_target_aware.py (Fixed) ===
 
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -49,7 +49,7 @@ val_loader = load_dataset("val")
 
 # === Model and optimizer
 unet = Unet1D(dim=256, seq_len=SEQ_LEN, channels=CHANNELS, cond_dim=1, target_dim=4)
-model = BitDiffusion(unet, timesteps=TIMESTEPS).to(DEVICE)
+model = BitDiffusion(unet, timesteps=TIMESTEPS, lambda_dg=1.0).to(DEVICE)
 ema_model = deepcopy(model)
 ema_decay = 0.999
 
@@ -73,7 +73,7 @@ for epoch in range(EPOCHS):
         cond_dg = batch["cond_dg"].to(DEVICE)
 
         t = torch.randint(0, TIMESTEPS, (x.size(0),), device=DEVICE).long()
-        loss = model.p_losses(x, t, cond_dg, cond_seq)
+        loss = model.p_losses(x, t, cond_dg, cond_seq, true_dg=cond_dg)
 
         optimizer.zero_grad()
         loss.backward()
@@ -82,7 +82,7 @@ for epoch in range(EPOCHS):
         total_train_loss += loss.item()
 
     avg_train_loss = total_train_loss / len(train_loader)
-    print(f"? Epoch {epoch+1}: Avg Train Loss = {avg_train_loss:.6f}")
+    print(f"\u2705 Epoch {epoch+1}: Avg Train Loss = {avg_train_loss:.6f}")
 
     # === Validation
     model.eval()
@@ -94,11 +94,11 @@ for epoch in range(EPOCHS):
             cond_dg = batch["cond_dg"].to(DEVICE)
 
             t = torch.randint(0, TIMESTEPS, (x.size(0),), device=DEVICE).long()
-            loss = model.p_losses(x, t, cond_dg, cond_seq)
+            loss = model.p_losses(x, t, cond_dg, cond_seq, true_dg=cond_dg)
             total_val_loss += loss.item()
 
     avg_val_loss = total_val_loss / len(val_loader)
-    print(f"?? Val Loss = {avg_val_loss:.6f}")
+    print(f"\U0001F1F9\U0001F1ED Val Loss = {avg_val_loss:.6f}")
     train_losses.append(avg_train_loss)
     val_losses.append(avg_val_loss)
 
@@ -106,7 +106,7 @@ for epoch in range(EPOCHS):
 
 # Final model save
 torch.save(model.state_dict(), SAVE_PATH)
-print(f"?? Final model saved to {SAVE_PATH}")
+print(f"\U0001F3AF Final model saved to {SAVE_PATH}")
 
 # === Plot Loss Curves
 plt.figure(figsize=(8, 5))

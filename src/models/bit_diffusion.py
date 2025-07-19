@@ -1,3 +1,4 @@
+# === bit_diffusion.py (Fixed) ===
 
 import torch
 import torch.nn as nn
@@ -54,7 +55,7 @@ class Unet1D(nn.Module):
         self.up2 = nn.ConvTranspose1d(dim * 2, dim, kernel_size=4, stride=2, padding=1)
         self.output_proj = nn.Conv1d(dim, channels, kernel_size=1)
 
-        self.dg_predictor = nn.Sequential(  # NEW
+        self.dg_predictor = nn.Sequential(
             nn.AdaptiveAvgPool1d(1),
             nn.Flatten(),
             nn.Linear(dim, 128),
@@ -91,7 +92,7 @@ class Unet1D(nn.Module):
             return out
 
 class BitDiffusion(nn.Module):
-    def __init__(self, model: nn.Module, timesteps=1000, lambda_dg=0.1):
+    def __init__(self, model: nn.Module, timesteps=1000, lambda_dg=1.0):
         super().__init__()
         self.model = model
         self.timesteps = timesteps
