@@ -108,15 +108,26 @@ class BitDiffusion(nn.Module):
         alpha_t = self.alphas_cumprod.to(t.device)[t].view(-1, 1, 1)
         return alpha_t.sqrt() * x_start + (1 - alpha_t).sqrt() * noise
 
-    def p_losses(self, x_start, t, cond, target, true_dg=None):
+    # === BitDiffusion class: update p_losses to return per-sample loss
+    def p_losses(self, x_start, t, cond, target, true_dg=None, reduction="mean"):
         noise = torch.randn_like(x_start)
         x_noisy = self.q_sample(x_start, t, noise)
         pred_noise, predicted_dg = self.model(x_noisy, target, cond, t, return_dg=True)
-        loss = F.mse_loss(pred_noise, noise)
+
+        # Per-sample noise loss
+        noise_loss = F.mse_loss(pred_noise, noise, reduction='none')  # shape: (B, L, C)
+        noise_loss = noise_loss.reshape(noise_loss.size(0), -1).mean(dim=1)  # shape: (B,)
+
         if true_dg is not None:
-            dg_loss = F.mse_loss(predicted_dg, true_dg)
-            loss += self.lambda_dg * dg_loss
-        return loss
+            dg_loss = F.mse_loss(predicted_dg.view(-1), true_dg.view(-1), reduction='none')  # shape: (B,)
+            total_loss = noise_loss + self.lambda_dg * dg_loss
+        else:
+            total_loss = noise_loss
+
+        if reduction == "none":
+            return total_loss
+        else:
+            return total_loss.mean()
 
     def sample(self, shape, cond, target, device):
         x = torch.randn(shape).to(device)

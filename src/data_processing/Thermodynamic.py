@@ -1,54 +1,43 @@
 import pandas as pd
 import RNA
 from tqdm import tqdm
+import os
+
+# === File Paths
+input_path = "../../data/raw/hairpin_rna_random_mutations.csv"
+output_path = "../../data/processed/vienna_rna_full_features.csv"
 
 # Load dataset
-df = pd.read_csv("../../data/raw/hairpin_rna_random_mutations.csv")
-
-# Add row ID to preserve order
+df = pd.read_csv(input_path)
 df['__row_id'] = range(len(df))
-
-# Convert DNA to RNA
 df['Hairpin_RNA_corrected'] = df['Hairpin_RNA'].str.replace('T', 'U')
 
-# Containers for ViennaRNA features
+# Extract ViennaRNA features
 mfe_structures = []
 mfe_energies = []
-ensemble_energies = []
-centroid_structures = []
-centroid_energies = []
-ensemble_diversities = []
-freq_mfe_structs = []
 
-# Extract ViennaRNA features
 for seq in tqdm(df['Hairpin_RNA_corrected'], desc="Extracting ViennaRNA features"):
     fc = RNA.fold_compound(seq)
-    mfe_struct, mfe_energy = fc.mfe()
-    ensemble_energy = fc.pf()
-    mfe_freq = fc.pr_structure(mfe_struct)
-    diversity = fc.mean_bp_distance()
-    centroid_struct, centroid_energy = fc.centroid()
+    struct, energy = fc.mfe()
+    mfe_structures.append(struct)
+    mfe_energies.append(energy)
 
-    mfe_structures.append(mfe_struct)
-    mfe_energies.append(mfe_energy)
-    ensemble_energies.append(ensemble_energy)
-    freq_mfe_structs.append(mfe_freq)
-    ensemble_diversities.append(diversity)
-    centroid_structures.append(centroid_struct)
-    centroid_energies.append(centroid_energy)
-
-# Add features back to the DataFrame
 df['MFE Structure'] = mfe_structures
 df['Delta_G_MFE'] = mfe_energies
-df['Ensemble Energy'] = ensemble_energies
-df['MFE Frequency'] = freq_mfe_structs
-df['Ensemble Diversity'] = ensemble_diversities
-df['Centroid Structure'] = centroid_structures
-df['Centroid Energy'] = centroid_energies
-
-# Sort by original row order and drop helper column
 df = df.sort_values('__row_id').drop(columns='__row_id')
 
-# Save final file
-df.to_csv("../../data/processed/vienna_rna_full_features.csv", index=False)
-print("✅ Saved all thermodynamic features in correct order to 'vienna_rna_full_features.csv'")
+# Normalize and bin ΔG
+min_dg = df["Delta_G_MFE"].min()
+max_dg = df["Delta_G_MFE"].max()
+df["Conditioned_ΔG_Norm"] = (df["Delta_G_MFE"] - min_dg) / (max_dg - min_dg)
+bins = [i / 10 for i in range(11)]
+df["ΔG_Bin"] = pd.cut(df["Conditioned_ΔG_Norm"], bins=bins, include_lowest=True)
+
+# Add sample weights: inverse frequency
+bin_counts = df["ΔG_Bin"].value_counts(normalize=True).to_dict()
+df["Sample_Weight"] = df["ΔG_Bin"].map(lambda b: 1.0 / bin_counts.get(b, 1.0))
+
+# Save
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+df.to_csv(output_path, index=False)
+print(f"✅ Saved full dataset with Sample_Weight to: {output_path}")
