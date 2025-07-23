@@ -21,15 +21,23 @@ train_set, val_set, test_set = random_split(dataset, [train_size, val_size, test
 
 # Save split datasets as .pt
 def save_dataset(split, name):
-    x_list, cond_seq_list, cond_dg_list = [], [], []
+    x_list, cond_seq_list, cond_dg_list, sample_weight_list = [], [], [], []
     for item in split:
         x_list.append(item["x"])
         cond_seq_list.append(item["cond_seq"])
         cond_dg_list.append(item["cond_dg"])
+        # Added sample_weight extraction
+        if "sample_weight" in item:
+            sample_weight_list.append(item["sample_weight"])
+        else:
+            # Default to weight = 1.0 if dataset does not provide
+            sample_weight_list.append(torch.tensor(1.0))
+
     torch.save({
         "x": torch.stack(x_list),
         "cond_seq": torch.stack(cond_seq_list),
         "cond_dg": torch.stack(cond_dg_list),
+        "sample_weight": torch.stack(sample_weight_list),
     }, f"../data/processed/{name}.pt")
     print(f"✅ Saved {name}.pt — {len(x_list)} samples")
 

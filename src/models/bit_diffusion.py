@@ -1,5 +1,3 @@
-# === bit_diffusion.py (Fixed) ===
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -108,38 +106,42 @@ class BitDiffusion(nn.Module):
         alpha_t = self.alphas_cumprod.to(t.device)[t].view(-1, 1, 1)
         return alpha_t.sqrt() * x_start + (1 - alpha_t).sqrt() * noise
 
-    # === BitDiffusion class: update p_losses to return per-sample loss
     def p_losses(self, x_start, t, cond, target, true_dg=None, reduction="mean"):
         noise = torch.randn_like(x_start)
         x_noisy = self.q_sample(x_start, t, noise)
         pred_noise, predicted_dg = self.model(x_noisy, target, cond, t, return_dg=True)
 
-        # Per-sample noise loss
-        noise_loss = F.mse_loss(pred_noise, noise, reduction='none')  # shape: (B, L, C)
-        noise_loss = noise_loss.reshape(noise_loss.size(0), -1).mean(dim=1)  # shape: (B,)
+        noise_loss = F.mse_loss(pred_noise, noise, reduction='none')
+        noise_loss = noise_loss.reshape(noise_loss.size(0), -1).mean(dim=1)
 
+        dg_loss = 0
         if true_dg is not None:
-            dg_loss = F.mse_loss(predicted_dg.view(-1), true_dg.view(-1), reduction='none')  # shape: (B,)
-            total_loss = noise_loss + self.lambda_dg * dg_loss
-        else:
-            total_loss = noise_loss
+            dg_loss = F.mse_loss(predicted_dg.view(-1), true_dg.view(-1), reduction='none')
 
-        if reduction == "none":
-            return total_loss
-        else:
-            return total_loss.mean()
+        total_loss = noise_loss + self.lambda_dg * dg_loss
+        return total_loss if reduction == "none" else total_loss.mean()
 
-    def sample(self, shape, cond, target, device):
-        x = torch.randn(shape).to(device)
+    def sample(self, shape, cond, target, device, guidance_scale=2.0, enable_guidance=True):
+        x = torch.randn(shape, device=device)
+        x.requires_grad_(enable_guidance)
+
         for t in reversed(range(self.timesteps)):
             t_tensor = torch.full((shape[0],), t, dtype=torch.long, device=device)
-            pred_noise = self.model(x, target, cond, t_tensor)
+            pred_noise, predicted_dg = self.model(x, target, cond, t_tensor, return_dg=True)
+
+            if enable_guidance:
+                dg_error = ((predicted_dg.view(-1) - cond.view(-1))**2).sum()
+                dg_grad = torch.autograd.grad(dg_error, x, retain_graph=True)[0]
+                pred_noise = pred_noise - guidance_scale * dg_grad
+
             alpha_t = self.alphas.to(device)[t]
             alpha_cumprod_t = self.alphas_cumprod.to(device)[t]
             mean = (x - (1 - alpha_t).sqrt() * pred_noise) / alpha_t.sqrt()
+
             if t > 0:
                 noise = torch.randn_like(x)
                 x = mean + (1 - alpha_cumprod_t).sqrt() * noise
             else:
                 x = mean
-        return x
+
+        return x.detach()

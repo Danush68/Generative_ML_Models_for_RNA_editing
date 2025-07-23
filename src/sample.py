@@ -1,7 +1,6 @@
 import torch
 import pandas as pd
 import RNA
-import os
 from src.models.bit_diffusion import Unet1D, BitDiffusion
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -13,7 +12,6 @@ model_path = "../src/models/bit_diffusion_unet.pt"
 target_path = "../data/processed/target_onehot.pt"
 csv_path = "../outputs/all_samples_per_dg.csv"
 
-# Load ΔG range from dataset
 dg_df = pd.read_csv("../data/processed/vienna_rna_full_features.csv")
 dg_min = dg_df["Delta_G_MFE"].min()
 dg_max = dg_df["Delta_G_MFE"].max()
@@ -32,21 +30,28 @@ def mutation_count(gRNA, target):
     return sum(1 for a, b in zip(gRNA, target) if a != b)
 
 def decode_bits(seq_tensor):
-    bits = (seq_tensor > 0.5).int().cpu()
-    return ''.join([bit_to_base[tuple(int(x) for x in bits[i])] for i in range(bits.size(0))])
+    """
+    Argmax-based decoding for stable nucleotide prediction.
+    """
+    seq_tensor = seq_tensor.detach().cpu()
+    decoded_seq = []
+    for i in range(seq_tensor.size(0)):
+        bits = (seq_tensor[i] > 0.5).int()
+        decoded_seq.append(bit_to_base[tuple(int(x) for x in bits)])
+    return ''.join(decoded_seq)
 
 def create_hairpin(t, g): return t + "UUUUU" + g[::-1]
 def compute_mfe(s): return RNA.fold_compound(s).mfe()[1]
 def denorm_dg(norm): return norm * (dg_max - dg_min) + dg_min
 
-# === Main generation logic ===
-def generate_all_samples(n_per_bin: int):
+def generate_all_samples(n_per_bin: int, guidance_scale=2.0, enable_guidance=True):
     rows = []
     with torch.no_grad():
         for dg in dg_bins:
             cond = torch.full((n_per_bin, 1), dg.item()).to(device)
             target = target_seq.repeat(n_per_bin, 1, 1).to(device)
-            samples = model.sample((n_per_bin, seq_len, channels), cond, target, device)
+            samples = model.sample((n_per_bin, seq_len, channels), cond, target, device,
+                                   guidance_scale=guidance_scale, enable_guidance=enable_guidance)
 
             for i in range(n_per_bin):
                 g = decode_bits(samples[i])
@@ -73,10 +78,13 @@ def generate_all_samples(n_per_bin: int):
     df.to_csv(csv_path, index=False)
     print(f"✅ Saved {len(df)} samples to {csv_path}")
 
-# === CLI or callable entrypoint ===
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", type=int, default=100, help="Number of samples per ΔG bin")
+    parser.add_argument("--guidance", type=float, default=2.0, help="ΔG guidance scale")
+    parser.add_argument("--no-guidance", action="store_true", help="Disable ΔG guidance")
     args = parser.parse_args()
-    generate_all_samples(args.n)
+
+    enable_guidance = not args.no_guidance
+    generate_all_samples(args.n, guidance_scale=args.guidance, enable_guidance=enable_guidance)
