@@ -18,21 +18,22 @@ dg_max = dg_df["Delta_G_MFE"].max()
 
 dg_bins = torch.linspace(0.1, 0.9, steps=9)
 
+# Model initialization (matches training)
 unet = Unet1D(dim=256, seq_len=seq_len, channels=channels, cond_dim=1, target_dim=4)
 model = BitDiffusion(unet, timesteps=timesteps).to(device)
 model.load_state_dict(torch.load(model_path, map_location=device))
 model.eval()
 
+# Load target sequence (one-hot)
 target_seq = torch.load(target_path)[0:1].to(device)
+
 bit_to_base = {(0, 0): 'A', (0, 1): 'C', (1, 0): 'G', (1, 1): 'U'}
 
 def mutation_count(gRNA, target):
     return sum(1 for a, b in zip(gRNA, target) if a != b)
 
 def decode_bits(seq_tensor):
-    """
-    Argmax-based decoding for stable nucleotide prediction.
-    """
+    """Argmax-based decoding for stable nucleotide prediction."""
     seq_tensor = seq_tensor.detach().cpu()
     decoded_seq = []
     for i in range(seq_tensor.size(0)):
@@ -46,15 +47,24 @@ def denorm_dg(norm): return norm * (dg_max - dg_min) + dg_min
 
 def generate_all_samples(n_per_bin: int, guidance_scale=2.0, enable_guidance=True):
     rows = []
-    with torch.no_grad():
+
+    grad_context = torch.no_grad() if not enable_guidance else torch.enable_grad()
+    with grad_context:
         for dg in dg_bins:
             cond = torch.full((n_per_bin, 1), dg.item()).to(device)
+            # Keep target same shape as training (batch, seq_len, 4)
             target = target_seq.repeat(n_per_bin, 1, 1).to(device)
-            samples = model.sample((n_per_bin, seq_len, channels), cond, target, device,
-                                   guidance_scale=guidance_scale, enable_guidance=enable_guidance)
+
+            # Call sample with training input shape (batch, seq_len, channels)
+            samples = model.sample(
+                (n_per_bin, seq_len, channels),
+                cond, target, device,
+                guidance_scale=guidance_scale,
+                enable_guidance=enable_guidance
+            )
 
             for i in range(n_per_bin):
-                g = decode_bits(samples[i])
+                g = decode_bits(samples[i])  # (seq_len, 2)
                 hairpin = create_hairpin("CUGACUACAGCAUUGCUCAGUACUGCUGUA", g)
                 mfe = compute_mfe(hairpin)
                 real_dg = denorm_dg(dg.item())
@@ -68,7 +78,7 @@ def generate_all_samples(n_per_bin: int, guidance_scale=2.0, enable_guidance=Tru
                     "Generated_gRNA": g,
                     "Computed_MFE": round(mfe, 2),
                     "Abs_Error_DG_vs_MFE": round(error, 2),
-                    "Mutation_Count": mutations-1,
+                    "Mutation_Count": mutations - 1,
                     "Hairpin": hairpin
                 })
 
@@ -87,4 +97,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     enable_guidance = not args.no_guidance
-    generate_all_samples(args.n, guidance_scale=args.guidance, enable_guidance=enable_guidance)
+    generate_all_samples(args.n, guidance_scale=args.guidance, enable_guidance=False)

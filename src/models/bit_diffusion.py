@@ -122,15 +122,20 @@ class BitDiffusion(nn.Module):
         return total_loss if reduction == "none" else total_loss.mean()
 
     def sample(self, shape, cond, target, device, guidance_scale=2.0, enable_guidance=True):
-        x = torch.randn(shape, device=device)
-        x.requires_grad_(enable_guidance)
+        """
+        shape: (batch, seq_len, channels)  # same shape as training input x
+        target: (batch, seq_len, 4)
+        """
+        batch_size, seq_len, channels = shape
+        # Random noise same shape as training data
+        x = torch.randn((batch_size, seq_len, channels), device=device, requires_grad=enable_guidance)
 
         for t in reversed(range(self.timesteps)):
-            t_tensor = torch.full((shape[0],), t, dtype=torch.long, device=device)
+            t_tensor = torch.full((batch_size,), t, dtype=torch.long, device=device)
             pred_noise, predicted_dg = self.model(x, target, cond, t_tensor, return_dg=True)
 
             if enable_guidance:
-                dg_error = ((predicted_dg.view(-1) - cond.view(-1))**2).sum()
+                dg_error = ((predicted_dg.view(-1) - cond.view(-1)) ** 2).sum()
                 dg_grad = torch.autograd.grad(dg_error, x, retain_graph=True)[0]
                 pred_noise = pred_noise - guidance_scale * dg_grad
 
@@ -145,3 +150,4 @@ class BitDiffusion(nn.Module):
                 x = mean
 
         return x.detach()
+

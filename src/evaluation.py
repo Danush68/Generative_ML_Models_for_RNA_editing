@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import numpy as np
 
 # === File Paths
 input_csv = "../outputs/all_samples_per_dg.csv"
@@ -62,7 +63,34 @@ plt.tight_layout()
 plt.savefig(f"{plot_dir}/error_distribution_per_dg_bin.png")
 plt.close()
 
-# === 5. Correlation Summary
+# === 5. New: Scatter plot - Conditioned vs Computed ΔG (MFE)
+plt.figure(figsize=(8, 8))
+plt.scatter(df["Conditioned_ΔG_Norm"], df["Computed_MFE"], alpha=0.6)
+# Diagonal reference line (normalized ΔG scaled back to MFE range)
+x_vals = np.linspace(df["Conditioned_ΔG_Norm"].min(), df["Conditioned_ΔG_Norm"].max(), 100)
+mfe_min, mfe_max = df["Computed_MFE"].min(), df["Computed_MFE"].max()
+y_vals = x_vals * (mfe_max - mfe_min) + mfe_min  # rescaled for visual reference
+plt.plot(x_vals, y_vals, 'r--', label='Ideal Alignment')
+plt.title("Conditioned vs. Computed ΔG (MFE)")
+plt.xlabel("Conditioned ΔG (Normalized)")
+plt.ylabel("Computed MFE")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig(f"{plot_dir}/scatter_dg_vs_mfe.png")
+plt.close()
+
+# === 6. New: Histogram of Absolute ΔG Error
+plt.figure(figsize=(10, 5))
+sns.histplot(df["Abs_Error_DG_vs_MFE"], bins=30, kde=True, color="skyblue", edgecolor="black")
+plt.title("Absolute ΔG Error Distribution")
+plt.xlabel("|Conditioned ΔG - Computed MFE| (kcal/mol)")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.savefig(f"{plot_dir}/hist_dg_error.png")
+plt.close()
+
+# === 7. Correlation Summary
 corr_mfe = df["Conditioned_ΔG_Norm"].corr(df["Computed_MFE"])
 corr_error = df["Conditioned_ΔG_Norm"].corr(df["Abs_Error_DG_vs_MFE"])
 
