@@ -1,3 +1,4 @@
+#danush
 import torch
 import pandas as pd
 import RNA
@@ -97,4 +98,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     enable_guidance = not args.no_guidance
-    generate_all_samples(args.n, guidance_scale=args.guidance, enable_guidance=False)
+    generate_all_samples(args.n, guidance_scale=args.guidance, enable_guidance=True)
