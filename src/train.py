@@ -14,7 +14,7 @@ EPOCHS = 300
 LR = 1e-4
 TIMESTEPS = 1000
 SEQ_LEN = 30
-CHANNELS = 2
+CHANNELS = 4
 LAMBDA_DG_FIDELITY = 10.0
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

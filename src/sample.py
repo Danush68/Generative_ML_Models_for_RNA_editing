@@ -6,7 +6,7 @@ from src.models.bit_diffusion import Unet1D, BitDiffusion
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 seq_len = 30
-channels = 2
+channels = 4
 timesteps = 1000
 
 model_path = "../src/models/bit_diffusion_unet.pt"
@@ -28,19 +28,40 @@ model.eval()
 # Load target sequence (one-hot)
 target_seq = torch.load(target_path)[0:1].to(device)
 
-bit_to_base = {(0, 0): 'A', (0, 1): 'C', (1, 0): 'G', (1, 1): 'U'}
-
 def mutation_count(gRNA, target):
     return sum(1 for a, b in zip(gRNA, target) if a != b)
 
+BASES = ['A', 'C', 'G', 'U']
+
 def decode_bits(seq_tensor):
-    """Argmax-based decoding for stable nucleotide prediction."""
-    seq_tensor = seq_tensor.detach().cpu()
-    decoded_seq = []
-    for i in range(seq_tensor.size(0)):
-        bits = (seq_tensor[i] > 0.5).int()
-        decoded_seq.append(bit_to_base[tuple(int(x) for x in bits)])
-    return ''.join(decoded_seq)
+    """
+    Decode a per-position tensor to a base string.
+    Supports (L,4) or (4,L) one-hot/probs; also tolerates (L,2) bit-pairs.
+    """
+    import torch
+    t = seq_tensor.detach().cpu()
+
+    if t.ndim != 2:
+        raise ValueError(f"Expected 2D tensor per sequence, got shape {tuple(t.shape)}")
+
+    # Normalize shape to (L, C)
+    if t.shape[1] not in (2, 4) and t.shape[0] in (2, 4):
+        t = t.T
+    C = t.shape[1]
+
+    if C == 4:
+        # Argmax over A,C,G,U
+        idx = t.argmax(dim=1).tolist()
+        return ''.join(BASES[i] for i in idx)
+
+    if C == 2:
+        # Fallback for bit-pairs (shouldn't be used in your current setup)
+        bits = (t > 0.5).to(torch.int32)
+        mapping = {(0, 0): 'A', (0, 1): 'C', (1, 0): 'G', (1, 1): 'U'}
+        return ''.join(mapping.get((int(bits[i, 0]), int(bits[i, 1])), 'N') for i in range(t.shape[0]))
+
+    raise ValueError(f"Unsupported channel count for decoding: {C} (expected 4 or 2)")
+
 
 def create_hairpin(t, g): return t + "UUUUU" + g[::-1]
 def compute_mfe(s): return RNA.fold_compound(s).mfe()[1]

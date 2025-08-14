@@ -2,11 +2,8 @@ import numpy as np
 
 def one_hot_encode_rna(seq):
     """
-    One-hot encodes a 30-nt RNA sequence into a 120-bit binary vector.
-    A = [1, 0, 0, 0]
-    C = [0, 1, 0, 0]
-    G = [0, 0, 1, 0]
-    U = [0, 0, 0, 1]
+    One-hot encodes a 30-nt RNA sequence into a (30, 4) matrix.
+    Rows = positions (30), Columns = channels [A, C, G, U]
     """
     mapping = {
         'A': [1, 0, 0, 0],
@@ -21,17 +18,19 @@ def one_hot_encode_rna(seq):
     if len(seq) != 30:
         raise ValueError("Input sequence must be 30 nucleotides long.")
 
-    encoded = []
+    rows = []
     for base in seq:
         if base not in mapping:
             raise ValueError(f"Invalid nucleotide '{base}' in sequence.")
-        encoded.extend(mapping[base])
+        rows.append(mapping[base])
 
-    return np.array(encoded)
+    # Return shape: (30, 4) instead of flat (120,)
+    return np.array(rows, dtype=np.float32)
 
 # Example usage:
-sequence = "GACTGATGACGTAACGAGTCATGACGACAT"  # Example 30-nt antisense RNA
-encoded_vector = one_hot_encode_rna(sequence)
+if __name__ == "__main__":
+    sequence = "GACTGATGACGTAACGAGTCATGACGACAT"  # Example 30-nt antisense RNA
+    encoded_matrix = one_hot_encode_rna(sequence)
 
-print("Encoded Target RNA vector:\n", encoded_vector)
-print("Length:", len(encoded_vector))
+    print("Encoded Target RNA matrix:\n", encoded_matrix)
+    print("Shape:", encoded_matrix.shape)  # -> (30, 4)
