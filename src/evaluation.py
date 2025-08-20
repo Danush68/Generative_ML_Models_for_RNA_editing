@@ -68,7 +68,7 @@ plt.figure(figsize=(8, 8))
 plt.scatter(df["Conditioned_ΔG_Norm"], df["Computed_MFE"], alpha=0.6)
 # Diagonal reference line (normalized ΔG scaled back to MFE range)
 x_vals = np.linspace(df["Conditioned_ΔG_Norm"].min(), df["Conditioned_ΔG_Norm"].max(), 100)
-mfe_min, mfe_max = df["Computed_MFE"].min(), df["Computed_MFE"].max()
+mfe_min, mfe_max = -50,-9#df["Real_ΔG_Target"].min(), df["Real_ΔG_Target"].max()
 y_vals = x_vals * (mfe_max - mfe_min) + mfe_min  # rescaled for visual reference
 plt.plot(x_vals, y_vals, 'r--', label='Ideal Alignment')
 plt.title("Conditioned vs. Computed ΔG (MFE)")
@@ -79,7 +79,7 @@ plt.grid(True)
 plt.tight_layout()
 plt.savefig(f"{plot_dir}/scatter_dg_vs_mfe.png")
 plt.close()
-
+print(x_vals)
 # === 6. New: Histogram of Absolute ΔG Error
 plt.figure(figsize=(10, 5))
 sns.histplot(df["Abs_Error_DG_vs_MFE"], bins=30, kde=True, color="skyblue", edgecolor="black")
