@@ -43,7 +43,7 @@ plt.close()
 
 # === 3. Mutation Count Boxplot
 plt.figure(figsize=(10, 5))
-sns.boxplot(x="Conditioned_ΔG_Norm", y="Mutation_Count", data=df, palette="coolwarm")
+sns.boxplot(x="Conditioned_ΔG_Norm", y="Achieved_Mutation_Count", data=df, palette="coolwarm")
 plt.title("Mutation Count per ΔG Bin")
 plt.xlabel("Conditioned ΔG (normalized)")
 plt.ylabel("Mutation Count")

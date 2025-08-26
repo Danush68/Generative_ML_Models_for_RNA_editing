@@ -121,23 +121,22 @@ class BitDiffusion(nn.Module):
         total_loss = noise_loss + self.lambda_dg * dg_loss
         return total_loss if reduction == "none" else total_loss.mean()
 
-    def sample(self, shape, cond, target, device, guidance_scale=2.0, enable_guidance=True):
+    def sample(self, shape, cond_vec, target, device,
+               guidance_scale=2.0):
         """
-        shape: (batch, seq_len, channels)  # same shape as training input x
+        shape: (batch, seq_len, channels)
+        cond_vec: (batch, D) where D = 1 + MUT_DIM (ΔG_norm in column 0)
         target: (batch, seq_len, 4)
         """
         batch_size, seq_len, channels = shape
-        # Random noise same shape as training data
-        x = torch.randn((batch_size, seq_len, channels), device=device, requires_grad=enable_guidance)
+        x = torch.randn((batch_size, seq_len, channels), device=device)
+        # we only need grads on x when guidance is enabled
 
         for t in reversed(range(self.timesteps)):
             t_tensor = torch.full((batch_size,), t, dtype=torch.long, device=device)
-            pred_noise, predicted_dg = self.model(x, target, cond, t_tensor, return_dg=True)
 
-            if enable_guidance:
-                dg_error = ((predicted_dg.view(-1) - cond.view(-1)) ** 2).sum()
-                dg_grad = torch.autograd.grad(dg_error, x, retain_graph=True)[0]
-                pred_noise = pred_noise - guidance_scale * dg_grad
+            with torch.set_grad_enabled(True):
+                pred_noise = self.model(x, target, cond_vec, t_tensor)
 
             alpha_t = self.alphas.to(device)[t]
             alpha_cumprod_t = self.alphas_cumprod.to(device)[t]

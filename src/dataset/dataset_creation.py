@@ -11,7 +11,7 @@ complementary_rna = Ch.complement_rna(original_rna)
 
 #Generate 1,000,000 mutated samples with random 1–10 mutations in each mutated grna
 samples = []
-num_samples = 1000000
+num_samples = 10000
 
 complementary_rna_1 = list(complementary_rna)
 complementary_rna_1[8] = 'A' # for the mutation
@@ -19,7 +19,7 @@ complementary_rna_1 = ''.join(complementary_rna_1)
 complementary_rna = complementary_rna_1
 
 for _ in range(num_samples):
-    num_mutations = random.randint(1, 7)
+    num_mutations = random.randint(1, 10)
     mutated_compl = Ch.mutate_rna_sequence(complementary_rna, num_mutations)
     mutated_hairpin = Ch.create_hairpin(original_rna, mutated_compl)
     samples.append({
